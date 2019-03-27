@@ -8,6 +8,10 @@ import collections
 os.environ["PYTHONUNBUFFERED"]="1"
 
 #### General functions (start) ####
+def openWrite(fileName, message):
+    with open(fileName, 'a') as FN:
+        FN.write(str(message) + '\n')
+
 def debugPrint(message):
     """
     Print debug message.
@@ -309,7 +313,7 @@ class libertyParser():
 
 
 #### Verification functions (start) ####
-    def restoreLib(self, groupDic=''):
+    def restoreLib(self, libFile, groupDic=''):
         """
         This function is used to verify the liberty parser.
         It converts self.libDic into the original liberty file (comment will be ignored).
@@ -322,7 +326,7 @@ class libertyParser():
         groupType = groupDic['type']
         groupName = groupDic['name']
 
-        print(' '*groupDepth + str(groupType) + ' (' + str(groupName) + ') {')
+        openWrite(libFile, ' '*groupDepth + str(groupType) + ' (' + str(groupName) + ') {')
 
         for key in groupDic:
             value = groupDic[key]
@@ -331,40 +335,44 @@ class libertyParser():
             elif key == 'group':
                 subGroupList = groupDic['group']
                 for subGroup in subGroupList:
-                    self.restoreLib(subGroup)
+                    self.restoreLib(libFile, subGroup)
             elif key == 'values':
-                print('  ' + ' '*groupDepth + key + ' ( \\')
-                for i in range(len(value)):
-                    item = value[i]
-                    if i == len(value)-1:
-                        print('    ' + ' '*groupDepth + str(item) + ' \\')
+                openWrite(libFile, '  ' + ' '*groupDepth + key + ' ( \\')
+                valueString = re.sub('\(', '', value)
+                valueString = re.sub('\)', '', valueString)
+                valueString = re.sub('"\s*,\s*"', '"#"', valueString)
+                valuesList = re.split('#', valueString)
+                for i in range(len(valuesList)):
+                    item = valuesList[i].strip()
+                    if i == len(valuesList)-1:
+                        openWrite(libFile, '    ' + ' '*groupDepth + str(item) + ' \\')
                     else:
-                        print('    ' + ' '*groupDepth + str(item) + ', \\')
-                print('  ' + ' '*groupDepth + ');')
+                        openWrite(libFile, '    ' + ' '*groupDepth + str(item) + ', \\')
+                openWrite(libFile, '  ' + ' '*groupDepth + ');')
             elif key == 'table':
-                print('  ' + ' '*groupDepth + key + ' : "' + str(value[0]) + ', \\')
+                openWrite(libFile, '  ' + ' '*groupDepth + key + ' : "' + str(value[0]) + ', \\')
                 for i in range(1, len(value)):
                     item = value[i]
                     if i == len(value)-1:
-                        print(str(item) + '";')
+                        openWrite(libFile, str(item) + '";')
                     else:
-                        print(str(item) + ', \\')
+                        openWrite(libFile, str(item) + ', \\')
             elif isinstance(value, list):
                 for item in value:
                     if re.match('\(.*\)', item):
                         if key == 'define':
-                            print('  ' + ' '*groupDepth + key + str(item) + ';')
+                            openWrite(libFile, '  ' + ' '*groupDepth + key + str(item) + ';')
                         else:
-                            print('  ' + ' '*groupDepth + key + ' ' + str(item) + ';')
+                            openWrite(libFile, '  ' + ' '*groupDepth + key + ' ' + str(item) + ';')
                     else:
-                        print('  ' + ' '*groupDepth + key + ' : ' + str(item) + ';')
+                        openWrite(libFile, '  ' + ' '*groupDepth + key + ' : ' + str(item) + ';')
             else:
                 if re.match('\(.*\)', value):
-                    print('  ' + ' '*groupDepth + key + ' ' + str(value) + ';')
+                    openWrite(libFile, '  ' + ' '*groupDepth + key + ' ' + str(value) + ';')
                 else:
-                    print('  ' + ' '*groupDepth + key + ' : ' + str(value) + ';')
+                    openWrite(libFile, '  ' + ' '*groupDepth + key + ' : ' + str(value) + ';')
 
-        print(' '*groupDepth + '}')
+        openWrite(libFile, ' '*groupDepth + '}')
 #### Verification functions (end) ####
 
 
