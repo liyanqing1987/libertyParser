@@ -623,8 +623,6 @@ class libertyParser():
         }
         """
         bundleDic = collections.OrderedDict()
-        sharedTimingDicList = []
-        sharedInternalPowerDicList = []
 
         if 'group' in groupDic:
             for groupDic in groupDic['group']:
@@ -640,17 +638,12 @@ class libertyParser():
                         bundleDic['pin'][pinName] = pinDic
                 elif groupType == 'timing':
                     timingDic = self._getTimingGroupInfo(groupDic)
-                    sharedTimingDicList.append(timingDic)
+                    bundleDic.setdefault('timing', [])
+                    bundleDic['timing'].append(timingDic)
                 elif groupType == 'internal_power':
                     internalPowerDic = self._getInternalPowerGroupInfo(groupDic)
-                    sharedInternalPowerDicList.append(internalPowerDic)
-
-        if 'pin' in bundleDic:
-            for pinName in bundleDic['pin'].keys():
-                if 'timing' not in bundleDic['pin'][pinName]:
-                    bundleDic['pin'][pinName]['timing'] = sharedTimingDicList
-                if 'internal_power' not in bundleDic['pin'][pinName]:
-                    bundleDic['pin'][pinName]['internal_power'] = sharedInternalPowerDicList
+                    bundleDic.setdefault('internal_power', [])
+                    bundleDic['internal_power'].append(internalPowerDic)
 
         return(bundleDic)
 
@@ -673,8 +666,6 @@ class libertyParser():
         }
         """
         busDic = collections.OrderedDict()
-        sharedTimingDicList = []
-        sharedInternalPowerDicList = []
 
         if 'group' in groupDic:
             for groupDic in groupDic['group']:
@@ -690,17 +681,12 @@ class libertyParser():
                         busDic['pin'][pinName] = pinDic
                 elif groupType == 'timing':
                     timingDic = self._getTimingGroupInfo(groupDic)
-                    sharedTimingDicList.append(timingDic)
+                    busDic.setdefault('timing', [])
+                    busDic['timing'].append(timingDic)
                 elif groupType == 'internal_power':
                     internalPowerDic = self._getInternalPowerGroupInfo(groupDic)
-                    sharedInternalPowerDicList.append(internalPowerDic)
-
-        if 'pin' in busDic:
-            for pinName in busDic['pin'].keys():
-                if 'timing' not in busDic['pin'][pinName]:
-                    busDic['pin'][pinName]['timing'] = sharedTimingDicList
-                if 'internal_power' not in busDic['pin'][pinName]:
-                    busDic['pin'][pinName]['internal_power'] = sharedInternalPowerDicList
+                    busDic.setdefault('internal_power', [])
+                    busDic['internal_power'].append(internalPowerDic)
 
         return(busDic)
 
