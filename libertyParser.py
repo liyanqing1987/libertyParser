@@ -624,6 +624,17 @@ class libertyParser():
         """
         bundleDic = collections.OrderedDict()
 
+        if 'members' in groupDic:
+            pinListString = groupDic['members']
+            pinListString = re.sub('\(', '', pinListString)
+            pinListString = re.sub('\)', '', pinListString)
+            pinListString = re.sub('"', '', pinListString)
+            pinList = pinListString.split(',')
+            for pinName in pinList:
+                pinName = pinName.strip()
+                bundleDic.setdefault('pin', collections.OrderedDict())
+                bundleDic['pin'].setdefault(pinName, collections.OrderedDict())
+
         if 'group' in groupDic:
             for groupDic in groupDic['group']:
                 groupType = groupDic['type']
