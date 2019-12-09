@@ -350,10 +350,12 @@ class libertyParser():
                         openWrite(libFile, '    ' + ' '*groupDepth + str(item) + ', \\')
                 openWrite(libFile, '  ' + ' '*groupDepth + ');')
             elif key == 'table':
-                openWrite(libFile, '  ' + ' '*groupDepth + key + ' : "' + str(value[0]) + ', \\')
-                for i in range(1, len(value)):
-                    item = value[i]
-                    if i == len(value)-1:
+                valueString = re.sub('"', '', value)
+                valueList = re.split(',', valueString)
+                openWrite(libFile, '  ' + ' '*groupDepth + key + ' : "' + str(valueList[0]) + ', \\')
+                for i in range(1, len(valueList)):
+                    item = valueList[i].strip()
+                    if i == len(valueList)-1:
                         openWrite(libFile, str(item) + '";')
                     else:
                         openWrite(libFile, str(item) + ', \\')
