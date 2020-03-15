@@ -19,16 +19,6 @@ def debugPrint(message):
     if ('debug' in os.environ) and (os.environ['debug'] == '1'):
         currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print('DEBUG [' + str(currentTime) + ']: ' + str(message))
-
-def tryCommand(command, errorMessage='*Error*: Failed on executing system command'):
-    """
-    Execute a system command, exit 1 with any error.
-    """
-    try:
-        os.system(command)
-    except Exception as error:
-        print(str(errorMessage) + ': ' + str(error))
-        sys.exit(1)
 #### General functions (end) ####
 
 
@@ -95,9 +85,9 @@ class libertyParser():
 
         # Write cellLibFile - head part.
         firstCellLineNum = libCellDic[libCellList[0]]
-        command = "awk 'NR>0 && NR<" + str(firstCellLineNum) + "' " + str(libFile) + " > " + str(cellLibFile)
         debugPrint('    Writing cell liberty file head part ...')
-        tryCommand(command, '*Error*: Failed on writing cell liberty file head')
+        command = "awk 'NR>0 && NR<" + str(firstCellLineNum) + "' " + str(libFile) + " > " + str(cellLibFile)
+        os.system(command)
 
         # Write cellLibFile - cell part.
         for cell in cellList:
@@ -110,9 +100,9 @@ class libertyParser():
                 nextCellIndex = cellIndex + 1
                 nextCell = libCellList[nextCellIndex]
                 cellLastLineNum = int(libCellDic[nextCell]) - 1
-            command = "awk 'NR>=" + str(cellFirstLineNum) + " && NR<=" + str(cellLastLineNum) + "' " + str(libFile) + " >> " + str(cellLibFile)
             debugPrint('    Writing cell liberty file cell "' + str(cell) + '" part ...')
-            tryCommand(command, '*Error*: Failed on writing cell liberty file cell "' + str(cell) + '"')
+            command = "awk 'NR>=" + str(cellFirstLineNum) + " && NR<=" + str(cellLastLineNum) + "' " + str(libFile) + " >> " + str(cellLibFile)
+            os.system(command)
 
         with open(cellLibFile, 'a') as CLF:
             CLF.write('}\n')
