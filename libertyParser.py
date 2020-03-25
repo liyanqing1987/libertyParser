@@ -136,12 +136,12 @@ class libertyParser():
 
         # Simple attribute compile.
         # key : value;
-        simpleAttributeCompile = re.compile('^(\s*)(\S+)\s*:\s*(.+)\s*;\s*$')
+        simpleAttributeCompile = re.compile('^(\s*)(\S+)\s*:\s*(.+)\s*;.*$')
         specialSimpleAttributeCompile = re.compile('^(\s*)(\S+)\s*:\s*(.+)\s*$')
 
         # Complex attribute compile.
         # key (valueList);
-        complexAttributeCompile = re.compile('^(\s*)(\S+)\s*(\(.+\))\s*;\s*$')
+        complexAttributeCompile = re.compile('^(\s*)(\S+)\s*(\(.+\))\s*;.*$')
         specialComplexAttributeCompile = re.compile('^(\s*)(\S+)\s*(\(.+\))\s*$')
 
         # Multi lines compile.
