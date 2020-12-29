@@ -7,19 +7,9 @@ import collections
 
 os.environ["PYTHONUNBUFFERED"]="1"
 
-#### General functions (start) ####
 def openWrite(fileName, message):
     with open(fileName, 'a') as FN:
         FN.write(str(message) + '\n')
-
-def debugPrint(message):
-    """
-    Print debug message.
-    """
-    if ('debug' in os.environ) and (os.environ['debug'] == '1'):
-        currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print('DEBUG [' + str(currentTime) + ']: ' + str(message))
-#### General functions (end) ####
 
 
 #### Liberty parser (start) ####
@@ -28,8 +18,10 @@ class libertyParser():
     Parse liberty file and save a special dictionary data structure.
     Get specified data with sub-function "getData".
     """
-    def __init__(self, libFile, cellList=[]):
-        debugPrint('* Liberty File : ' + str(libFile))
+    def __init__(self, libFile, cellList=[], debug=False):
+        self.debug = debug
+
+        self.debugPrint('* Liberty File : ' + str(libFile))
 
         # Liberty file must exists.
         if not os.path.exists(libFile):
@@ -38,12 +30,20 @@ class libertyParser():
 
         # If cellList is specified, regenerate the cell-based liberty file as libFile.
         if len(cellList) > 0:
-            debugPrint('* Specified Cell List : ' + str(cellList))
+            self.debugPrint('* Specified Cell List : ' + str(cellList))
             libFile = self.genCellLibFile(libFile, cellList)
 
         # Parse the liberty file and organize the data structure as a dictionary.
         groupList = self.libertyParser(libFile)
         self.libDic = self.organizeData(groupList)
+
+    def debugPrint(self, message):
+        """
+        Print debug message.
+        """
+        if self.debug:
+            currentTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print('DEBUG [' + str(currentTime) + ']: ' + str(message))
 
     def genCellLibFile(self, libFile, cellList):
         """
@@ -52,13 +52,13 @@ class libertyParser():
         """
         cellNames = '_'.join(cellList)
         cellLibFile = str(libFile) + '.' + str(cellNames)
-        debugPrint('>>> Generating cell-based liberty file "' + str(cellLibFile) + '" ...')
+        self.debugPrint('>>> Generating cell-based liberty file "' + str(cellLibFile) + '" ...')
 
         libCellDic = collections.OrderedDict()
         libCellList = []
 
         # Get lineNum-cellName info on libFile.
-        debugPrint('    Getting cells from liberty file "' + str(libFile) + '" ...')
+        self.debugPrint('    Getting cells from liberty file "' + str(libFile) + '" ...')
         cellCompile = re.compile('^\s*(\d+):\s*cell\s*\((.*)\)\s*{\s*$')
         lines = os.popen('grep -n "cell (" ' + str(libFile)).readlines()
 
@@ -72,7 +72,7 @@ class libertyParser():
                 libCellList.append(cellName)
 
         # Make sure all the specified cells are on libFile.
-        debugPrint('    Check specified cells missing or not.')
+        self.debugPrint('    Check specified cells missing or not.')
         cellMissing = False
 
         for cell in cellList:
@@ -85,7 +85,7 @@ class libertyParser():
 
         # Write cellLibFile - head part.
         firstCellLineNum = libCellDic[libCellList[0]]
-        debugPrint('    Writing cell liberty file head part ...')
+        self.debugPrint('    Writing cell liberty file head part ...')
         command = "awk 'NR>0 && NR<" + str(firstCellLineNum) + "' " + str(libFile) + " > " + str(cellLibFile)
         os.system(command)
 
@@ -100,7 +100,7 @@ class libertyParser():
                 nextCellIndex = cellIndex + 1
                 nextCell = libCellList[nextCellIndex]
                 cellLastLineNum = int(libCellDic[nextCell]) - 1
-            debugPrint('    Writing cell liberty file cell "' + str(cell) + '" part ...')
+            self.debugPrint('    Writing cell liberty file cell "' + str(cell) + '" part ...')
             command = "awk 'NR>=" + str(cellFirstLineNum) + " && NR<=" + str(cellLastLineNum) + "' " + str(libFile) + " >> " + str(cellLibFile)
             os.system(command)
 
@@ -176,7 +176,7 @@ class libertyParser():
         # Last opened group num on groupList, point to the latest open group.
         lastOpenedGroupNum = -1
 
-        debugPrint('>>> Parsing liberty file "' + str(libFile) + '" ...')
+        self.debugPrint('>>> Parsing liberty file "' + str(libFile) + '" ...')
         startSeconds = int(time.time())
         libFileLine = 0
 
@@ -279,8 +279,8 @@ class libertyParser():
 
         endSeconds = int(time.time())
         parseSeconds = endSeconds - startSeconds
-        debugPrint('    Done')
-        debugPrint('    Parse time : ' + str(libFileLine) + ' lines, ' + str(parseSeconds) + ' seconds.')
+        self.debugPrint('    Done')
+        self.debugPrint('    Parse time : ' + str(libFileLine) + ' lines, ' + str(parseSeconds) + ' seconds.')
 
         return(groupList)
 
@@ -288,7 +288,7 @@ class libertyParser():
         """
         Re-organize list data structure (groupList) into a dictionary data structure.
         """
-        debugPrint('>>> Re-organizing data structure ...')
+        self.debugPrint('>>> Re-organizing data structure ...')
 
         for i in range(len(groupList)-1, 0, -1):
             groupDic = groupList[i]
@@ -296,7 +296,7 @@ class libertyParser():
             groupList[fatherGroupNum].setdefault('group', [])
             groupList[fatherGroupNum]['group'].insert(0, groupDic)
 
-        debugPrint('    Done')
+        self.debugPrint('    Done')
 
         return(groupList[0])
 #### Liberty parser (end) ####
