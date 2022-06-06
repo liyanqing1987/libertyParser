@@ -5,7 +5,8 @@ import time
 import datetime
 import collections
 
-os.environ["PYTHONUNBUFFERED"]="1"
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 
 def openWrite(fileName, message):
     with open(fileName, 'a') as FN:
@@ -184,7 +185,7 @@ class libertyParser():
             for line in LF:
                 libFileLine += 1
 
-                # Sort by compile hit rate. 
+                # Sort by compile hit rate.
                 if commentMark:
                     if commentEndCompile.match(line):
                         commentMark = False
@@ -230,10 +231,10 @@ class libertyParser():
                             (lastOpenedGroupNum) = self.getLastOpenedGroupNum(openedGroupNumList)
 
                             currentGroupDic = {
-                                               'fatherGroupNum' : lastOpenedGroupNum,
-                                               'depth'          : groupDepth,
-                                               'type'           : groupType,
-                                               'name'           : groupName,
+                                               'fatherGroupNum': lastOpenedGroupNum,
+                                               'depth': groupDepth,
+                                               'type': groupType,
+                                               'name': groupName,
                                               }
 
                             groupList.append(currentGroupDic)
@@ -301,7 +302,6 @@ class libertyParser():
         return(groupList[0])
 #### Liberty parser (end) ####
 
-
 #### Verification functions (start) ####
     def restoreLib(self, libFile, groupDic=''):
         """
@@ -366,7 +366,6 @@ class libertyParser():
 
         openWrite(libFile, ' '*groupDepth + '}')
 #### Verification functions (end) ####
-
 
 #### Application functions (start) ####
     def getUnit(self):
