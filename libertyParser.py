@@ -13,7 +13,7 @@ def openWrite(fileName, message):
         FN.write(str(message) + '\n')
 
 
-#### Liberty parser (start) ####
+# Liberty parser (start) #
 class libertyParser():
     """
     Parse liberty file and save a special dictionary data structure.
@@ -60,11 +60,12 @@ class libertyParser():
 
         # Get lineNum-cellName info on libFile.
         self.debugPrint('    Getting cells from liberty file "' + str(libFile) + '" ...')
-        cellCompile = re.compile('^\s*(\d+):\s*cell\s*\((.*)\)\s*{\s*$')
+        cellCompile = re.compile(r'^\s*(\d+):\s*cell\s*\((.*)\)\s*{\s*$')
         lines = os.popen('grep -n "cell (" ' + str(libFile)).readlines()
 
         for line in lines:
             line = line.strip()
+
             if cellCompile.match(line):
                 myMatch = cellCompile.match(line)
                 lineNum = myMatch.group(1)
@@ -95,12 +96,14 @@ class libertyParser():
             cellFirstLineNum = libCellDic[cell]
             cellLastLineNum = 0
             cellIndex = libCellList.index(cell)
+
             if cellIndex == len(libCellList) - 1:
                 cellLastLineNum = os.popen("wc -l " + str(libFile) + " | awk '{print $1}'").read().strip()
             else:
                 nextCellIndex = cellIndex + 1
                 nextCell = libCellList[nextCellIndex]
                 cellLastLineNum = int(libCellDic[nextCell]) - 1
+
             self.debugPrint('    Writing cell liberty file cell "' + str(cell) + '" part ...')
             command = "awk 'NR>=" + str(cellFirstLineNum) + " && NR<=" + str(cellLastLineNum) + "' " + str(libFile) + " >> " + str(cellLibFile)
             os.system(command)
@@ -108,7 +111,7 @@ class libertyParser():
         with open(cellLibFile, 'a') as CLF:
             CLF.write('}\n')
 
-        return(cellLibFile)
+        return cellLibFile
 
     def getLastOpenedGroupNum(self, openedGroupNumList):
         """
@@ -119,7 +122,7 @@ class libertyParser():
         if len(openedGroupNumList) > 0:
             lastOpenedGroupNum = openedGroupNumList[-1]
 
-        return(lastOpenedGroupNum)
+        return lastOpenedGroupNum
 
     def libertyParser(self, libFile):
         """
@@ -127,39 +130,38 @@ class libertyParser():
         Save data block based on "group".
         Save data blocks into a list.
         """
-        #### compile ####
+        # compile #
         # Group compile.
         # type (name) {
         #   ...
         # }
-        groupCompile = re.compile('^(\s*)(\S+)\s*\((.*?)\)\s*{\s*$')
-        groupDoneCompile = re.compile('^\s*}\s*$')
+        groupCompile = re.compile(r'^(\s*)(\S+)\s*\((.*?)\)\s*{\s*$')
+        groupDoneCompile = re.compile(r'^\s*}\s*$')
 
         # Simple attribute compile.
         # key : value;
-        simpleAttributeCompile = re.compile('^(\s*)(\S+)\s*:\s*(.+)\s*;.*$')
-        specialSimpleAttributeCompile = re.compile('^(\s*)(\S+)\s*:\s*(.+)\s*$')
+        simpleAttributeCompile = re.compile(r'^(\s*)(\S+)\s*:\s*(.+)\s*;.*$')
+        specialSimpleAttributeCompile = re.compile(r'^(\s*)(\S+)\s*:\s*(.+)\s*$')
 
         # Complex attribute compile.
         # key (valueList);
-        complexAttributeCompile = re.compile('^(\s*)(\S+)\s*(\(.+\))\s*;.*$')
-        specialComplexAttributeCompile = re.compile('^(\s*)(\S+)\s*(\(.+\))\s*$')
+        complexAttributeCompile = re.compile(r'^(\s*)(\S+)\s*(\(.+\))\s*;.*$')
+        specialComplexAttributeCompile = re.compile(r'^(\s*)(\S+)\s*(\(.+\))\s*$')
 
         # Multi lines compile.
         # *** \
         # *** \
         # ***;
-        multiLinesCompile = re.compile('^(.*)\\\\\s*$')
-        multiLinesDoneCompile = re.compile('^(.*;)\s*$')
+        multiLinesCompile = re.compile(r'^(.*)\\\s*$')
+        multiLinesDoneCompile = re.compile(r'^(.*;)\s*$')
 
         # Comment compile.
         # /* ... */
-        commentStartCompile = re.compile('^(\s*)/\*.*$')
-        commentEndCompile = re.compile('^.*\*/\s*$')
+        commentStartCompile = re.compile(r'^(\s*)/\*.*$')
+        commentEndCompile = re.compile(r'^.*\*/\s*$')
 
         # Empty line compile.
-        emptyLineCompile = re.compile('^\s*$')
-        #################
+        emptyLineCompile = re.compile(r'^\s*$')
 
         # For multi lines.
         multiLinesString = ''
@@ -182,7 +184,7 @@ class libertyParser():
         libFileLine = 0
 
         with open(libFile, 'r') as LF:
-            for line in LF:
+            for line in LF.readlines():
                 libFileLine += 1
 
                 # Sort by compile hit rate.
@@ -209,6 +211,7 @@ class libertyParser():
                             myMatch = complexAttributeCompile.match(line)
                             key = myMatch.group(2)
                             valueList = myMatch.group(3)
+
                             if key in groupList[lastOpenedGroupNum]:
                                 # For "voltage_map" or such kind items (there are some "voltage_map" on the same group).
                                 if isinstance(groupList[lastOpenedGroupNum][key], list):
@@ -249,31 +252,31 @@ class libertyParser():
                                 commentMark = True
                         elif emptyLineCompile.match(line):
                             pass
-                        else:
-                            if specialComplexAttributeCompile.match(line):
-                                print('*Warning*: Line ' + str(libFileLine) + ': Irregular liberty line!')
-                                print('          ' + str(line))
-                                myMatch = specialComplexAttributeCompile.match(line)
-                                key = myMatch.group(2)
-                                valueList = myMatch.group(3)
-                                if key in groupList[lastOpenedGroupNum]:
-                                    # For "voltage_map" or such kind items (there are some "voltage_map" on the same group).
-                                    if isinstance(groupList[lastOpenedGroupNum][key], list):
-                                        groupList[lastOpenedGroupNum][key].append(valueList)
-                                    else:
-                                        groupList[lastOpenedGroupNum][key] = [groupList[lastOpenedGroupNum][key], valueList]
+                        elif specialComplexAttributeCompile.match(line):
+                            print('*Warning*: Line ' + str(libFileLine) + ': Irregular liberty line!')
+                            print('          ' + str(line))
+                            myMatch = specialComplexAttributeCompile.match(line)
+                            key = myMatch.group(2)
+                            valueList = myMatch.group(3)
+
+                            if key in groupList[lastOpenedGroupNum]:
+                                # For "voltage_map" or such kind items (there are some "voltage_map" on the same group).
+                                if isinstance(groupList[lastOpenedGroupNum][key], list):
+                                    groupList[lastOpenedGroupNum][key].append(valueList)
                                 else:
-                                    groupList[lastOpenedGroupNum][key] = valueList
-                            elif specialSimpleAttributeCompile.match(line):
-                                print('*Warning*: Line ' + str(libFileLine) + ': Irregular line!')
-                                print('          ' + str(line))
-                                myMatch = specialSimpleAttributeCompile.match(line)
-                                key = myMatch.group(2)
-                                value = myMatch.group(3)
-                                groupList[lastOpenedGroupNum][key] = value
+                                    groupList[lastOpenedGroupNum][key] = [groupList[lastOpenedGroupNum][key], valueList]
                             else:
-                                print('*Error*: Line ' + str(libFileLine) + ': Unrecognizable line!')
-                                print('         ' + str(line))
+                                groupList[lastOpenedGroupNum][key] = valueList
+                        elif specialSimpleAttributeCompile.match(line):
+                            print('*Warning*: Line ' + str(libFileLine) + ': Irregular line!')
+                            print('          ' + str(line))
+                            myMatch = specialSimpleAttributeCompile.match(line)
+                            key = myMatch.group(2)
+                            value = myMatch.group(3)
+                            groupList[lastOpenedGroupNum][key] = value
+                        else:
+                            print('*Error*: Line ' + str(libFileLine) + ': Unrecognizable line!')
+                            print('         ' + str(line))
 
                         if multiLinesString:
                             multiLinesString = ''
@@ -283,7 +286,7 @@ class libertyParser():
         self.debugPrint('    Done')
         self.debugPrint('    Parse time : ' + str(libFileLine) + ' lines, ' + str(parseSeconds) + ' seconds.')
 
-        return(groupList)
+        return groupList
 
     def organizeData(self, groupList):
         """
@@ -299,10 +302,10 @@ class libertyParser():
 
         self.debugPrint('    Done')
 
-        return(groupList[0])
-#### Liberty parser (end) ####
+        return groupList[0]
+# Liberty parser (end) #
 
-#### Verification functions (start) ####
+# Verification functions (start) #
     def restoreLib(self, libFile, groupDic=''):
         """
         This function is used to verify the liberty parser.
@@ -320,6 +323,7 @@ class libertyParser():
 
         for key in groupDic:
             value = groupDic[key]
+
             if (key == 'fatherGroupNum') or (key == 'depth') or (key == 'type') or (key == 'name'):
                 pass
             elif key == 'group':
@@ -328,30 +332,35 @@ class libertyParser():
                     self.restoreLib(libFile, subGroup)
             elif key == 'values':
                 openWrite(libFile, '  ' + ' '*groupDepth + key + ' ( \\')
-                valueString = re.sub('\(', '', value)
-                valueString = re.sub('\)', '', valueString)
-                valueString = re.sub('"\s*,\s*"', '"#"', valueString)
+                valueString = re.sub(r'\(', '', value)
+                valueString = re.sub(r'\)', '', valueString)
+                valueString = re.sub(r'"\s*,\s*"', '"#"', valueString)
                 valuesList = re.split('#', valueString)
+
                 for i in range(len(valuesList)):
                     item = valuesList[i].strip()
+
                     if i == len(valuesList)-1:
                         openWrite(libFile, '    ' + ' '*groupDepth + str(item) + ' \\')
                     else:
                         openWrite(libFile, '    ' + ' '*groupDepth + str(item) + ', \\')
+
                 openWrite(libFile, '  ' + ' '*groupDepth + ');')
             elif key == 'table':
-                valueString = re.sub('"', '', value)
+                valueString = re.sub(r'"', '', value)
                 valueList = re.split(',', valueString)
                 openWrite(libFile, '  ' + ' '*groupDepth + key + ' : "' + str(valueList[0]) + ', \\')
+
                 for i in range(1, len(valueList)):
                     item = valueList[i].strip()
+
                     if i == len(valueList)-1:
                         openWrite(libFile, str(item) + '";')
                     else:
                         openWrite(libFile, str(item) + ', \\')
             elif isinstance(value, list):
                 for item in value:
-                    if re.match('\(.*\)', item):
+                    if re.match(r'\(.*\)', item):
                         if key == 'define':
                             openWrite(libFile, '  ' + ' '*groupDepth + key + str(item) + ';')
                         else:
@@ -359,15 +368,15 @@ class libertyParser():
                     else:
                         openWrite(libFile, '  ' + ' '*groupDepth + key + ' : ' + str(item) + ';')
             else:
-                if re.match('\(.*\)', value):
+                if re.match(r'\(.*\)', value):
                     openWrite(libFile, '  ' + ' '*groupDepth + key + ' ' + str(value) + ';')
                 else:
                     openWrite(libFile, '  ' + ' '*groupDepth + key + ' : ' + str(value) + ';')
 
         openWrite(libFile, ' '*groupDepth + '}')
-#### Verification functions (end) ####
+# Verification functions (end) #
 
-#### Application functions (start) ####
+# Application functions (start) #
     def getUnit(self):
         """
         Get all "unit" setting.
@@ -381,11 +390,11 @@ class libertyParser():
         unitDic = collections.OrderedDict()
 
         for key in self.libDic.keys():
-            if re.match('.*_unit', key):
+            if re.match(r'.*_unit', key):
                 value = self.libDic[key]
                 unitDic[key] = value
 
-        return(unitDic)
+        return unitDic
 
     def getCellList(self):
         """
@@ -398,11 +407,12 @@ class libertyParser():
         if 'group' in self.libDic:
             for libGroupDic in self.libDic['group']:
                 groupType = libGroupDic['type']
+
                 if groupType == 'cell':
                     cellName = libGroupDic['name']
                     cellList.append(cellName)
 
-        return(cellList)
+        return cellList
 
     def getCellArea(self, cellList=[]):
         """
@@ -419,8 +429,10 @@ class libertyParser():
         if 'group' in self.libDic:
             for groupDic in self.libDic['group']:
                 groupType = groupDic['type']
+
                 if groupType == 'cell':
                     cellName = groupDic['name']
+
                     if (len(cellList) == 0) or (cellName in cellList):
                         if 'area' in groupDic:
                             cellArea = groupDic['area']
@@ -430,7 +442,7 @@ class libertyParser():
             if cellName not in cellAreaDic:
                 cellAreaDic[cellName] = ''
 
-        return(cellAreaDic)
+        return cellAreaDic
 
     def getCellLeakagePower(self, cellList=[]):
         """
@@ -453,21 +465,26 @@ class libertyParser():
         if 'group' in self.libDic:
             for groupDic in self.libDic['group']:
                 groupType = groupDic['type']
+
                 if groupType == 'cell':
                     cellName = groupDic['name']
+
                     if (len(cellList) == 0) or (cellName in cellList):
                         if 'group' in groupDic:
                             for cellGroupDic in groupDic['group']:
                                 cellGroupType = cellGroupDic['type']
+
                                 if cellGroupType == 'leakage_power':
                                     leakagePowerDic = {}
+
                                     for (key, value) in cellGroupDic.items():
                                         if (key == 'value') or (key == 'when') or (key == 'related_pg_pin'):
                                             leakagePowerDic[key] = value
+
                                     cellLeakagePowerDic.setdefault(cellName, [])
                                     cellLeakagePowerDic[cellName].append(leakagePowerDic)
 
-        return(cellLeakagePowerDic)
+        return cellLeakagePowerDic
 
     def _getTimingGroupInfo(self, groupDic):
         """
@@ -493,36 +510,48 @@ class libertyParser():
 
         if 'type' in groupDic:
             groupType = groupDic['type']
+
             if groupType == 'timing':
                 if 'related_pin' in groupDic:
                     timingDic['related_pin'] = groupDic['related_pin']
+
                 if 'related_pg_pin' in groupDic:
                     timingDic['related_pg_pin'] = groupDic['related_pg_pin']
+
                 if 'timing_sense' in groupDic:
                     timingDic['timing_sense'] = groupDic['timing_sense']
+
                 if 'timing_type' in groupDic:
                     timingDic['timing_type'] = groupDic['timing_type']
+
                 if 'when' in groupDic:
                     timingDic['when'] = groupDic['when']
+
                 if 'group' in groupDic:
                     timingDic['table_type'] = collections.OrderedDict()
+
                     for timingLevelGroupDic in groupDic['group']:
                         timingLevelGroupType = timingLevelGroupDic['type']
                         timingLevelGroupName = timingLevelGroupDic['name']
                         timingDic['table_type'][timingLevelGroupType] = collections.OrderedDict()
+
                         if timingLevelGroupName != '':
                             timingDic['table_type'][timingLevelGroupType]['template_name'] = timingLevelGroupName
-                        # 'sigma_type' is only for ocv lib.
+
                         if 'sigma_type' in timingLevelGroupDic:
+                            # 'sigma_type' is only for ocv lib.
                             timingDic['table_type'][timingLevelGroupType]['sigma_type'] = timingLevelGroupDic['sigma_type']
+
                         if 'index_1' in timingLevelGroupDic:
                             timingDic['table_type'][timingLevelGroupType]['index_1'] = timingLevelGroupDic['index_1']
+
                         if 'index_2' in timingLevelGroupDic:
                             timingDic['table_type'][timingLevelGroupType]['index_2'] = timingLevelGroupDic['index_2']
+
                         if 'values' in timingLevelGroupDic:
                             timingDic['table_type'][timingLevelGroupType]['values'] = timingLevelGroupDic['values']
 
-        return(timingDic)
+        return timingDic
 
     def _getInternalPowerGroupInfo(self, groupDic):
         """
@@ -546,26 +575,34 @@ class libertyParser():
 
         if 'type' in groupDic:
             groupType = groupDic['type']
+
             if groupType == 'internal_power':
                 if 'related_pin' in groupDic:
                     internalPowerDic['related_pin'] = groupDic['related_pin']
+
                 if 'related_pg_pin' in groupDic:
                     internalPowerDic['related_pg_pin'] = groupDic['related_pg_pin']
+
                 if 'when' in groupDic:
                     internalPowerDic['when'] = groupDic['when']
+
                 if 'group' in groupDic:
                     internalPowerDic['table_type'] = collections.OrderedDict()
+
                     for internalPowerLevelGroupDic in groupDic['group']:
                         internalPowerLevelGroupType = internalPowerLevelGroupDic['type']
                         internalPowerDic['table_type'][internalPowerLevelGroupType] = collections.OrderedDict()
+
                         if 'index_1' in internalPowerLevelGroupDic:
                             internalPowerDic['table_type'][internalPowerLevelGroupType]['index_1'] = internalPowerLevelGroupDic['index_1']
+
                         if 'index_2' in internalPowerLevelGroupDic:
                             internalPowerDic['table_type'][internalPowerLevelGroupType]['index_2'] = internalPowerLevelGroupDic['index_2']
+
                         if 'values' in internalPowerLevelGroupDic:
                             internalPowerDic['table_type'][internalPowerLevelGroupType]['values'] = internalPowerLevelGroupDic['values']
 
-        return(internalPowerDic)
+        return internalPowerDic
 
     def _getPinInfo(self, groupDic):
         """
@@ -580,10 +617,12 @@ class libertyParser():
 
         if 'type' in groupDic:
             groupType = groupDic['type']
+
             if groupType == 'pin':
                 if 'group' in groupDic:
                     for pinGroupDic in groupDic['group']:
                         pinGroupType = pinGroupDic['type']
+
                         if pinGroupType == 'timing':
                             timingDic = self._getTimingGroupInfo(pinGroupDic)
                             pinDic.setdefault('timing', [])
@@ -593,7 +632,7 @@ class libertyParser():
                             pinDic.setdefault('internal_power', [])
                             pinDic['internal_power'].append(internalPowerDic)
 
-        return(pinDic)
+        return pinDic
 
     def _getBundleInfo(self, groupDic, pinList=[]):
         """
@@ -617,10 +656,11 @@ class libertyParser():
 
         if 'members' in groupDic:
             pinListString = groupDic['members']
-            pinListString = re.sub('\(', '', pinListString)
-            pinListString = re.sub('\)', '', pinListString)
-            pinListString = re.sub('"', '', pinListString)
+            pinListString = re.sub(r'\(', '', pinListString)
+            pinListString = re.sub(r'\)', '', pinListString)
+            pinListString = re.sub(r'"', '', pinListString)
             pinList = pinListString.split(',')
+
             for pinName in pinList:
                 pinName = pinName.strip()
                 bundleDic.setdefault('pin', collections.OrderedDict())
@@ -629,13 +669,17 @@ class libertyParser():
         if 'group' in groupDic:
             for groupDic in groupDic['group']:
                 groupType = groupDic['type']
+
                 if groupType == 'pin':
                     pinName = groupDic['name']
+
                     if (len(pinList) > 0) and (pinName not in pinList):
                         continue
+
                     bundleDic.setdefault('pin', collections.OrderedDict())
                     bundleDic['pin'].setdefault(pinName, collections.OrderedDict())
                     pinDic = self._getPinInfo(groupDic)
+
                     if pinDic:
                         bundleDic['pin'][pinName] = pinDic
                 elif groupType == 'timing':
@@ -647,7 +691,7 @@ class libertyParser():
                     bundleDic.setdefault('internal_power', [])
                     bundleDic['internal_power'].append(internalPowerDic)
 
-        return(bundleDic)
+        return bundleDic
 
     def _getBusInfo(self, groupDic, pinList=[]):
         """
@@ -672,13 +716,17 @@ class libertyParser():
         if 'group' in groupDic:
             for groupDic in groupDic['group']:
                 groupType = groupDic['type']
+
                 if groupType == 'pin':
                     pinName = groupDic['name']
+
                     if (len(pinList) > 0) and (pinName not in pinList):
                         continue
+
                     busDic.setdefault('pin', collections.OrderedDict())
                     busDic['pin'].setdefault(pinName, collections.OrderedDict())
                     pinDic = self._getPinInfo(groupDic)
+
                     if pinDic:
                         busDic['pin'][pinName] = pinDic
                 elif groupType == 'timing':
@@ -690,7 +738,7 @@ class libertyParser():
                     busDic.setdefault('internal_power', [])
                     busDic['internal_power'].append(internalPowerDic)
 
-        return(busDic)
+        return busDic
 
     def getLibPinInfo(self, cellList=[], bundleList=[], busList=[], pinList=[]):
         """
@@ -720,29 +768,39 @@ class libertyParser():
         if 'group' in self.libDic:
             for libGroupDic in self.libDic['group']:
                 groupType = libGroupDic['type']
+
                 if groupType == 'cell':
                     cellName = libGroupDic['name']
+
                     if (len(cellList) > 0) and (cellName not in cellList):
                         continue
+
                     if 'group' in libGroupDic:
                         for cellGroupDic in libGroupDic['group']:
                             cellGroupType = cellGroupDic['type']
+
                             if cellGroupType == 'pin':
                                 pinName = cellGroupDic['name']
+
                                 if (len(pinList) > 0) and (pinName not in pinList):
                                     continue
+
                                 libPinDic.setdefault('cell', collections.OrderedDict())
                                 libPinDic['cell'].setdefault(cellName, collections.OrderedDict())
                                 libPinDic['cell'][cellName].setdefault('pin', collections.OrderedDict())
                                 libPinDic['cell'][cellName]['pin'].setdefault(pinName, collections.OrderedDict())
                                 pinDic = self._getPinInfo(cellGroupDic)
+
                                 if pinDic:
                                     libPinDic['cell'][cellName]['pin'][pinName] = pinDic
                             elif cellGroupType == 'bundle':
                                 bundleName = cellGroupDic['name']
+
                                 if (len(bundleList) > 0) and (bundleName not in bundleList):
                                     continue
+
                                 bundleDic = self._getBundleInfo(cellGroupDic, pinList)
+
                                 if bundleDic:
                                     libPinDic.setdefault('cell', collections.OrderedDict())
                                     libPinDic['cell'].setdefault(cellName, collections.OrderedDict())
@@ -751,9 +809,12 @@ class libertyParser():
                                     libPinDic['cell'][cellName]['bundle'][bundleName] = bundleDic
                             elif cellGroupType == 'bus':
                                 busName = cellGroupDic['name']
+
                                 if (len(busList) > 0) and (bundleName not in busList):
                                     continue
+
                                 busDic = self._getBusInfo(cellGroupDic, pinList)
+
                                 if busDic:
                                     libPinDic.setdefault('cell', collections.OrderedDict())
                                     libPinDic['cell'].setdefault(cellName, collections.OrderedDict())
@@ -761,5 +822,5 @@ class libertyParser():
                                     libPinDic['cell'][cellName]['bus'].setdefault(busName, collections.OrderedDict())
                                     libPinDic['cell'][cellName]['bus'][busName] = busDic
 
-        return(libPinDic)
-#### Application functions (end) ####
+        return libPinDic
+# Application functions (end) #
